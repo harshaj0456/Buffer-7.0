@@ -3,33 +3,31 @@ package SharedModel;
 import java.util.*;
 
 /*
- * DependencyGraph represents directed dependency relationships
- * between components such as processes, registry keys, scripts, etc.
+ * NetworkGraph represents the communication network of the system.
+ * It is an undirected weighted graph:
+ * - nodes represent devices or systems
+ * - edges represent communication links
  *
  * Used in:
- * - TarjanSCC
- * - ArticulationPointFinder
- * - BetweennessCentrality
+ * - DijkstraPathFinder
+ * - MITMDetector
  */
-public class DependencyGraph {
+public class NetworkGraph {
 
-    // Stores all outgoing dependency edges
+    // Stores all communication links for each node
     private Map<Integer, List<NetworkEdge>> adjacencyList;
 
-    // Stores node details
+    // Stores node details using node ID as key
     private Map<Integer, NetworkNode> nodes;
 
-    // Tracks number of unique nodes
-    private int nodeCount;
-
-    public DependencyGraph() {
+    public NetworkGraph() {
         adjacencyList = new HashMap<>();
         nodes = new HashMap<>();
-        nodeCount = 0;
     }
 
     /*
-     * Adds a node to the dependency graph.
+     * Adds a node to the graph.
+     * Returns true if node is added successfully.
      */
     public boolean addNode(NetworkNode node) {
         if (node == null || nodes.containsKey(node.nodeId)) {
@@ -38,15 +36,15 @@ public class DependencyGraph {
 
         nodes.put(node.nodeId, node);
         adjacencyList.put(node.nodeId, new ArrayList<>());
-        nodeCount++;
         return true;
     }
 
     /*
-     * Adds a directed edge to the dependency graph.
-     * Example: A -> B means A depends on or reinstalls B.
+     * Adds an undirected edge to the graph.
+     * Since the communication network is bidirectional,
+     * both forward and reverse edges are added.
      */
-    public boolean addDirectedEdge(NetworkEdge edge) {
+    public boolean addEdge(NetworkEdge edge) {
         if (edge == null) {
             return false;
         }
@@ -56,46 +54,48 @@ public class DependencyGraph {
         }
 
         adjacencyList.get(edge.sourceNodeId).add(edge);
+
+        NetworkEdge reverseEdge = new NetworkEdge(
+            edge.destinationNodeId,
+            edge.sourceNodeId,
+            edge.weight,
+            edge.edgeType
+        );
+        adjacencyList.get(edge.destinationNodeId).add(reverseEdge);
+
         return true;
     }
 
     /*
-     * Returns outgoing neighbors of a node.
+     * Returns all neighboring edges for a given node.
      */
     public List<NetworkEdge> getNeighbors(int nodeId) {
         return adjacencyList.getOrDefault(nodeId, new ArrayList<>());
     }
 
     /*
-     * Returns node details by node ID.
+     * Returns the node object for a given node ID.
      */
     public NetworkNode getNode(int nodeId) {
         return nodes.get(nodeId);
     }
 
     /*
-     * Returns all node IDs.
+     * Returns all node IDs in the graph.
      */
     public Set<Integer> getAllNodeIds() {
         return nodes.keySet();
     }
 
     /*
-     * Returns number of unique nodes.
-     */
-    public int getNodeCount() {
-        return nodeCount;
-    }
-
-    /*
-     * Prints dependency graph.
+     * Prints the graph structure for debugging/demo.
      */
     public void printGraph() {
-        System.out.println("=== Dependency Graph ===");
+        System.out.println("=== Network Graph ===");
         for (int nodeId : adjacencyList.keySet()) {
-            System.out.print(nodes.get(nodeId).nodeName + " -> ");
+            System.out.print("Node " + nodes.get(nodeId).nodeName + " -> ");
             for (NetworkEdge edge : adjacencyList.get(nodeId)) {
-                System.out.print(nodes.get(edge.destinationNodeId).nodeName + " ");
+                System.out.print(nodes.get(edge.destinationNodeId).nodeName + "(w=" + edge.weight + ") ");
             }
             System.out.println();
         }

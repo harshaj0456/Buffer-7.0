@@ -3,33 +3,29 @@ package SharedModel;
 import java.util.*;
 
 /*
- * DependencyGraph represents directed dependency relationships
- * between components such as processes, registry keys, scripts, etc.
+ * NetworkTopology represents the network used for spread simulation.
+ * It is an undirected weighted graph.
  *
  * Used in:
- * - TarjanSCC
- * - ArticulationPointFinder
- * - BetweennessCentrality
+ * - TrustWeightedBFS
+ * - SpreadSimulator
+ * - ThreatScorer
  */
-public class DependencyGraph {
+public class NetworkTopology {
 
-    // Stores all outgoing dependency edges
+    // Stores all connected edges for each node
     private Map<Integer, List<NetworkEdge>> adjacencyList;
 
-    // Stores node details
+    // Stores node details by node ID
     private Map<Integer, NetworkNode> nodes;
 
-    // Tracks number of unique nodes
-    private int nodeCount;
-
-    public DependencyGraph() {
+    public NetworkTopology() {
         adjacencyList = new HashMap<>();
         nodes = new HashMap<>();
-        nodeCount = 0;
     }
 
     /*
-     * Adds a node to the dependency graph.
+     * Adds a node to the topology.
      */
     public boolean addNode(NetworkNode node) {
         if (node == null || nodes.containsKey(node.nodeId)) {
@@ -38,15 +34,14 @@ public class DependencyGraph {
 
         nodes.put(node.nodeId, node);
         adjacencyList.put(node.nodeId, new ArrayList<>());
-        nodeCount++;
         return true;
     }
 
     /*
-     * Adds a directed edge to the dependency graph.
-     * Example: A -> B means A depends on or reinstalls B.
+     * Adds an undirected edge to the topology.
+     * Both forward and reverse edges are stored.
      */
-    public boolean addDirectedEdge(NetworkEdge edge) {
+    public boolean addEdge(NetworkEdge edge) {
         if (edge == null) {
             return false;
         }
@@ -56,46 +51,48 @@ public class DependencyGraph {
         }
 
         adjacencyList.get(edge.sourceNodeId).add(edge);
+
+        NetworkEdge reverseEdge = new NetworkEdge(
+            edge.destinationNodeId,
+            edge.sourceNodeId,
+            edge.weight,
+            edge.edgeType
+        );
+        adjacencyList.get(edge.destinationNodeId).add(reverseEdge);
+
         return true;
     }
 
     /*
-     * Returns outgoing neighbors of a node.
+     * Returns neighboring edges of the node.
      */
     public List<NetworkEdge> getNeighbors(int nodeId) {
         return adjacencyList.getOrDefault(nodeId, new ArrayList<>());
     }
 
     /*
-     * Returns node details by node ID.
+     * Returns node object by node ID.
      */
     public NetworkNode getNode(int nodeId) {
         return nodes.get(nodeId);
     }
 
     /*
-     * Returns all node IDs.
+     * Returns all node IDs in the topology.
      */
     public Set<Integer> getAllNodeIds() {
         return nodes.keySet();
     }
 
     /*
-     * Returns number of unique nodes.
+     * Prints topology for debugging/demo.
      */
-    public int getNodeCount() {
-        return nodeCount;
-    }
-
-    /*
-     * Prints dependency graph.
-     */
-    public void printGraph() {
-        System.out.println("=== Dependency Graph ===");
+    public void printTopology() {
+        System.out.println("=== Network Topology ===");
         for (int nodeId : adjacencyList.keySet()) {
             System.out.print(nodes.get(nodeId).nodeName + " -> ");
             for (NetworkEdge edge : adjacencyList.get(nodeId)) {
-                System.out.print(nodes.get(edge.destinationNodeId).nodeName + " ");
+                System.out.print(nodes.get(edge.destinationNodeId).nodeName + "(w=" + edge.weight + ") ");
             }
             System.out.println();
         }
